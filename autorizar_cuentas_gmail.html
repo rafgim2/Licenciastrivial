@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Autorizar cuentas Gmail · Class Trivial</title>
+  <style>
+    :root {
+      --bg1: #2563eb;
+      --bg2: #38bdf8;
+      --bg3: #fde68a;
+      --card: rgba(255, 255, 255, 0.94);
+      --text: #111827;
+      --muted: #64748b;
+      --blue: #2563eb;
+      --green: #16a34a;
+      --red: #dc2626;
+      --yellow: #facc15;
+      --border: rgba(148, 163, 184, 0.35);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 14% 14%, rgba(255,255,255,0.62), transparent 25%),
+        radial-gradient(circle at 84% 12%, rgba(254,240,138,0.45), transparent 28%),
+        radial-gradient(circle at 24% 88%, rgba(196,181,253,0.36), transparent 30%),
+        linear-gradient(135deg, var(--bg1), var(--bg2), var(--bg3));
+      background-size: 180% 180%;
+      animation: fondo 16s ease infinite;
+    }
+
+    @keyframes fondo {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    main {
+      width: min(980px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 28px 0 42px;
+    }
+
+    .top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 20px;
+      color: white;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-weight: 1000;
+      font-size: clamp(28px, 5vw, 54px);
+      line-height: 0.95;
+      letter-spacing: -1px;
+      text-shadow: 0 5px 18px rgba(0,0,0,0.25);
+    }
+
+    .badge {
+      width: 66px;
+      height: 66px;
+      display: grid;
+      place-items: center;
+      border-radius: 24px;
+      background: white;
+      color: #111827;
+      box-shadow: 0 12px 26px rgba(0,0,0,0.20);
+      transform: rotate(-7deg);
+      font-size: 34px;
+    }
+
+    .pill {
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.25);
+      border: 1px solid rgba(255,255,255,0.36);
+      backdrop-filter: blur(8px);
+      color: white;
+      font-weight: 900;
+      box-shadow: 0 8px 22px rgba(0,0,0,0.13);
+    }
+
+    .card {
+      background: var(--card);
+      border: 5px solid rgba(255,255,255,0.75);
+      border-radius: 34px;
+      padding: clamp(20px, 4vw, 34px);
+      box-shadow: 0 24px 70px rgba(30,64,175,0.24), 0 0 0 8px rgba(255,255,255,0.12);
+      backdrop-filter: blur(12px);
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: clamp(34px, 5vw, 64px);
+      line-height: 0.95;
+      letter-spacing: -2px;
+    }
+
+    h2 {
+      margin: 24px 0 12px;
+      font-size: clamp(24px, 3.5vw, 38px);
+    }
+
+    p {
+      color: var(--muted);
+      font-weight: 800;
+      line-height: 1.35;
+      font-size: 18px;
+    }
+
+    .notice {
+      margin: 18px 0;
+      padding: 16px 18px;
+      border-radius: 22px;
+      background: #fff7ed;
+      border: 3px solid #fdba74;
+      color: #9a3412;
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .ok {
+      background: #dcfce7;
+      border-color: #86efac;
+      color: #166534;
+    }
+
+    .bad {
+      background: #fee2e2;
+      border-color: #fca5a5;
+      color: #991b1b;
+    }
+
+    .info {
+      background: #eef2ff;
+      border-color: #c7d2fe;
+      color: #312e81;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 18px;
+      font-weight: 1000;
+    }
+
+    input {
+      width: 100%;
+      border: 4px solid #e5e7eb;
+      border-radius: 22px;
+      padding: 17px 19px;
+      font-size: 23px;
+      font-weight: 900;
+      outline: none;
+      background: white;
+    }
+
+    input:focus {
+      border-color: var(--yellow);
+      box-shadow: 0 0 0 6px rgba(250,204,21,0.35);
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 210px;
+      gap: 12px;
+      align-items: end;
+      margin: 20px 0;
+    }
+
+    @media (max-width: 720px) {
+      .top { align-items: flex-start; flex-direction: column; }
+      .row { grid-template-columns: 1fr; }
+    }
+
+    button {
+      border: 0;
+      border-radius: 22px;
+      padding: 17px 20px;
+      font-size: 21px;
+      font-weight: 1000;
+      cursor: pointer;
+      color: white;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      box-shadow: 0 10px 0 #15803d, 0 18px 28px rgba(0,0,0,0.20);
+      transform: translateY(0);
+      transition: transform 0.08s, box-shadow 0.08s, filter 0.2s;
+      width: 100%;
+    }
+
+    button:hover { filter: brightness(1.06); }
+
+    button:active {
+      transform: translateY(7px);
+      box-shadow: 0 3px 0 #15803d, 0 9px 18px rgba(0,0,0,0.18);
+    }
+
+    button.secondary {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      box-shadow: 0 10px 0 #1d4ed8, 0 18px 28px rgba(0,0,0,0.20);
+    }
+
+    button.danger {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      box-shadow: 0 10px 0 #b91c1c, 0 18px 28px rgba(0,0,0,0.20);
+    }
+
+    button.small {
+      width: auto;
+      font-size: 16px;
+      padding: 10px 14px;
+      border-radius: 16px;
+      box-shadow: none;
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .hidden { display: none !important; }
+
+    .list {
+      display: grid;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .account {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding: 16px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, #ffffff, #eff6ff 55%, #fef9c3);
+      border: 3px solid rgba(147, 197, 253, 0.65);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+    }
+
+    .account strong {
+      display: block;
+      font-size: 20px;
+      word-break: break-word;
+    }
+
+    .account span {
+      color: #64748b;
+      font-weight: 850;
+      font-size: 14px;
+    }
+
+    code {
+      display: inline-block;
+      padding: 3px 7px;
+      border-radius: 9px;
+      background: #111827;
+      color: #facc15;
+      font-weight: 900;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header class="top">
+      <div class="brand"><div class="badge">🔐</div><div>Autorizar Gmail</div></div>
+      <div class="pill" id="sessionPill">Comprobando sesión...</div>
+    </header>
+
+    <section class="card">
+      <h1>Cuentas autorizadas</h1>
+      <p>
+        Esta página sirve para añadir o quitar cuentas de Gmail que podrán crear partidas como profesor en tu Class Trivial.
+        Solo la cuenta administradora puede gestionar la lista.
+      </p>
+
+      <div id="loginBox">
+        <div class="notice info">Inicia sesión con la cuenta administradora para autorizar otras cuentas.</div>
+        <button class="secondary" id="loginBtn">Iniciar sesión con Google</button>
+      </div>
+
+      <div id="notAdminBox" class="hidden">
+        <div class="notice bad" id="notAdminText">Esta cuenta no puede administrar autorizaciones.</div>
+        <button class="danger" id="logoutBtn1">Cerrar sesión</button>
+      </div>
+
+      <div id="adminBox" class="hidden">
+        <div class="notice ok" id="adminStatus">Sesión administradora correcta.</div>
+
+        <div class="row">
+          <div>
+            <label for="emailInput">Gmail que quieres autorizar</label>
+            <input id="emailInput" type="email" placeholder="profesor@gmail.com" autocomplete="off" />
+          </div>
+          <button id="addBtn">Autorizar ✨</button>
+        </div>
+
+        <div class="notice info">
+          La cuenta principal <code>rafgim36@gmail.com</code> siempre queda autorizada aunque no aparezca en la lista.
+        </div>
+
+        <h2>Lista actual</h2>
+        <div class="list" id="accountsList"></div>
+
+        <div style="margin-top: 24px; display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end;">
+          <button class="secondary small" id="refreshBtn" type="button">Actualizar lista</button>
+          <button class="danger small" id="logoutBtn2" type="button">Cerrar sesión</button>
+        </div>
+      </div>
+
+      <div class="notice hidden" id="messageBox"></div>
+    </section>
+  </main>
+
+  <script type="module">
+    /************************************************************
+     * CONFIGURACIÓN WEB DE FIREBASE
+     ************************************************************/
+    const firebaseConfig = {
+      apiKey: "AIzaSyD5EAMg-0p54f8bPq8SVdZ_ePg5Xso3cmg",
+      authDomain: "arm1-acbba.firebaseapp.com",
+      projectId: "arm1-acbba",
+      storageBucket: "arm1-acbba.firebasestorage.app",
+      messagingSenderId: "408825932019",
+      appId: "1:408825932019:web:10f2079b590b4c9ca3af86",
+      measurementId: "G-S78TM6PVRL"
+    };
+
+    const ADMIN_EMAIL = "rafgim36@gmail.com";
+    const AUTHORIZED_HOSTS_COLLECTION = "trivialAuthorizedHosts";
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import {
+      initializeFirestore,
+      collection,
+      doc,
+      setDoc,
+      deleteDoc,
+      onSnapshot,
+      serverTimestamp,
+      query,
+      orderBy
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+    import {
+      getAuth,
+      GoogleAuthProvider,
+      signInWithPopup,
+      signInWithRedirect,
+      getRedirectResult,
+      signOut,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+
+    const app = initializeApp(firebaseConfig);
+    const db = initializeFirestore(app, {
+      experimentalAutoDetectLongPolling: true,
+      useFetchStreams: false
+    });
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+
+    let currentUser = null;
+    let unsubscribeAccounts = null;
+
+    const $ = (id) => document.getElementById(id);
+
+    function normalizeEmail(value) {
+      return String(value || "").trim().toLowerCase();
+    }
+
+    function isValidEmail(email) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    function isAdmin(user) {
+      return normalizeEmail(user?.email) === normalizeEmail(ADMIN_EMAIL);
+    }
+
+    function showMessage(text, type = "info") {
+      const box = $("messageBox");
+      box.className = `notice ${type}`;
+      box.textContent = text;
+      box.classList.remove("hidden");
+      clearTimeout(showMessage._timer);
+      showMessage._timer = setTimeout(() => box.classList.add("hidden"), 5500);
+    }
+
+    async function login() {
+      try {
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+          (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+        if (isIOS) {
+          await signInWithRedirect(auth, provider);
+          return;
+        }
+        await signInWithPopup(auth, provider);
+      } catch (error) {
+        console.error(error);
+        try {
+          await signInWithRedirect(auth, provider);
+        } catch (redirectError) {
+          console.error(redirectError);
+          showMessage("No se ha podido iniciar sesión con Google.", "bad");
+        }
+      }
+    }
+
+    async function logout() {
+      await signOut(auth);
+    }
+
+    async function addAccount() {
+      if (!isAdmin(currentUser)) {
+        showMessage("Solo la cuenta administradora puede autorizar cuentas.", "bad");
+        return;
+      }
+
+      const email = normalizeEmail($("emailInput").value);
+      if (!isValidEmail(email)) {
+        showMessage("Escribe un correo válido, por ejemplo profesor@gmail.com.", "bad");
+        return;
+      }
+
+      if (email === normalizeEmail(ADMIN_EMAIL)) {
+        showMessage("Tu cuenta principal ya está autorizada siempre.", "info");
+        $("emailInput").value = "";
+        return;
+      }
+
+      await setDoc(doc(db, AUTHORIZED_HOSTS_COLLECTION, email), {
+        email,
+        enabled: true,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        createdBy: currentUser.email,
+        updatedBy: currentUser.email
+      }, { merge: true });
+
+      $("emailInput").value = "";
+      showMessage(`${email} ya puede crear partidas como profesor.`, "ok");
+    }
+
+    async function removeAccount(email) {
+      if (!isAdmin(currentUser)) {
+        showMessage("Solo la cuenta administradora puede quitar autorizaciones.", "bad");
+        return;
+      }
+
+      const cleanEmail = normalizeEmail(email);
+      if (!cleanEmail || cleanEmail === normalizeEmail(ADMIN_EMAIL)) return;
+
+      const ok = confirm(`¿Quitar autorización a ${cleanEmail}?`);
+      if (!ok) return;
+
+      await deleteDoc(doc(db, AUTHORIZED_HOSTS_COLLECTION, cleanEmail));
+      showMessage(`${cleanEmail} ya no está autorizado.`, "ok");
+    }
+
+    function renderAccountList(docs) {
+      const list = $("accountsList");
+      list.innerHTML = "";
+
+      if (!docs.length) {
+        list.innerHTML = `<div class="notice info" style="margin:0;">Todavía no has añadido ninguna cuenta extra.</div>`;
+        return;
+      }
+
+      for (const snap of docs) {
+        const data = snap.data();
+        const email = normalizeEmail(data.email || snap.id);
+        const div = document.createElement("div");
+        div.className = "account";
+        div.innerHTML = `
+          <div>
+            <strong>${escapeHtml(email)}</strong>
+            <span>Autorizada para crear partidas como profesor</span>
+          </div>
+          <button class="danger small" type="button">Quitar</button>
+        `;
+        div.querySelector("button").addEventListener("click", () => removeAccount(email));
+        list.appendChild(div);
+      }
+    }
+
+    function listenAccounts() {
+      unsubscribeAccounts?.();
+      const q = query(collection(db, AUTHORIZED_HOSTS_COLLECTION), orderBy("email"));
+      unsubscribeAccounts = onSnapshot(q, (snapshot) => {
+        const docs = snapshot.docs.filter((d) => d.data()?.enabled !== false);
+        renderAccountList(docs);
+      }, (error) => {
+        console.error(error);
+        showMessage("No se ha podido leer la lista. Revisa las reglas de Firestore.", "bad");
+      });
+    }
+
+    function updateUI() {
+      const email = currentUser?.email || "";
+      $("sessionPill").textContent = currentUser ? `Sesión: ${email}` : "Sin sesión";
+
+      $("loginBox").classList.toggle("hidden", Boolean(currentUser));
+      $("notAdminBox").classList.add("hidden");
+      $("adminBox").classList.add("hidden");
+
+      if (!currentUser) {
+        unsubscribeAccounts?.();
+        unsubscribeAccounts = null;
+        return;
+      }
+
+      if (!isAdmin(currentUser)) {
+        unsubscribeAccounts?.();
+        unsubscribeAccounts = null;
+        $("notAdminText").textContent = `Has iniciado sesión como ${email}, pero solo ${ADMIN_EMAIL} puede autorizar cuentas.`;
+        $("notAdminBox").classList.remove("hidden");
+        return;
+      }
+
+      $("adminStatus").textContent = `Sesión administradora correcta: ${email}`;
+      $("adminBox").classList.remove("hidden");
+      listenAccounts();
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    $("loginBtn").addEventListener("click", login);
+    $("logoutBtn1").addEventListener("click", logout);
+    $("logoutBtn2").addEventListener("click", logout);
+    $("addBtn").addEventListener("click", addAccount);
+    $("refreshBtn").addEventListener("click", listenAccounts);
+    $("emailInput").addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter") addAccount();
+    });
+
+    getRedirectResult(auth).catch((error) => {
+      console.error("Error recuperando login por redirección:", error);
+    });
+
+    onAuthStateChanged(auth, (user) => {
+      currentUser = user;
+      updateUI();
+    });
+  </script>
+</body>
+</html>
