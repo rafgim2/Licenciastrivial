@@ -682,6 +682,15 @@
       if (ev.key === "Enter") addAccount();
     });
 
+    document.querySelectorAll(".buyPackBtn").forEach((btn) => {
+      btn.addEventListener("click", () => buyPack(btn.dataset.pack));
+    });
+
+    $("backToGameBtn").addEventListener("click", () => {
+      window.location.href = "./index.html";
+    });
+
+
     getRedirectResult(auth).catch((error) => {
       console.error("Error recuperando login por redirección:", error);
     });
