@@ -271,6 +271,41 @@
       color: #facc15;
       font-weight: 900;
     }
+
+    .pack-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin: 18px 0;
+    }
+
+    .pack-card {
+      padding: 18px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, #ffffff, #eff6ff 55%, #fef9c3);
+      border: 3px solid rgba(147, 197, 253, 0.65);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+    }
+
+    .pack-card strong {
+      display: block;
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+
+    .pack-card span {
+      display: block;
+      color: #64748b;
+      font-weight: 850;
+      font-size: 15px;
+      margin-bottom: 14px;
+    }
+
+    @media (max-width: 720px) {
+      .pack-grid {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
@@ -288,8 +323,47 @@
       </p>
 
       <div id="loginBox">
-        <div class="notice info">Inicia sesión con la cuenta administradora para autorizar otras cuentas.</div>
+        <div class="notice info">Inicia sesión con Google para comprar partidas o, si eres administrador, autorizar otras cuentas.</div>
         <button class="secondary" id="loginBtn">Iniciar sesión con Google</button>
+      </div>
+
+
+      <div id="purchaseBox" class="hidden">
+        <div class="notice ok" id="creditsStatus">Sesión iniciada.</div>
+
+        <h2>Comprar partidas</h2>
+        <p>
+          Compra packs de partidas para poder generar nuevos trivials.
+          Cada partida generada descontará 1 uso.
+        </p>
+
+        <div class="pack-grid">
+          <div class="pack-card">
+            <strong>50 partidas</strong>
+            <span>Pack pequeño para probar o usar de vez en cuando.</span>
+            <button class="secondary buyPackBtn" type="button" data-pack="50">Comprar 50</button>
+          </div>
+
+          <div class="pack-card">
+            <strong>100 partidas</strong>
+            <span>Pack intermedio para uso habitual en clase.</span>
+            <button class="secondary buyPackBtn" type="button" data-pack="100">Comprar 100</button>
+          </div>
+
+          <div class="pack-card">
+            <strong>200 partidas</strong>
+            <span>Pack grande para usarlo durante más tiempo.</span>
+            <button class="secondary buyPackBtn" type="button" data-pack="200">Comprar 200</button>
+          </div>
+        </div>
+
+        <div class="notice info">
+          Cada cuenta podrá probar 3 partidas gratis. Lo activaremos en el siguiente paso.
+        </div>
+
+        <div style="margin-top: 18px;">
+          <button class="secondary small" id="backToGameBtn" type="button">Volver al juego</button>
+        </div>
       </div>
 
       <div id="notAdminBox" class="hidden">
@@ -364,6 +438,11 @@
       onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
+    import {
+      getFunctions,
+      httpsCallable
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-functions.js";
+
     const app = initializeApp(firebaseConfig);
     const db = initializeFirestore(app, {
       experimentalAutoDetectLongPolling: true,
@@ -371,6 +450,8 @@
     });
     const auth = getAuth(app);
     const provider = new GoogleAuthProvider();
+    const functions = getFunctions(app, "europe-west1");
+    const createCheckoutSession = httpsCallable(functions, "createCheckoutSession");
 
     let currentUser = null;
     let unsubscribeAccounts = null;
@@ -420,6 +501,38 @@
 
     async function logout() {
       await signOut(auth);
+    }
+
+
+    async function buyPack(pack) {
+      if (!currentUser) {
+        showMessage("Inicia sesión con Google antes de comprar partidas.", "bad");
+        return;
+      }
+
+      const buttons = document.querySelectorAll(".buyPackBtn");
+      buttons.forEach((btn) => btn.disabled = true);
+
+      try {
+        showMessage(`Preparando pago del pack de ${pack} partidas...`, "info");
+
+        const result = await createCheckoutSession({
+          pack: String(pack)
+        });
+
+        const url = result.data?.url;
+
+        if (!url) {
+          throw new Error("Stripe no ha devuelto una URL de pago.");
+        }
+
+        window.location.href = url;
+      } catch (error) {
+        console.error(error);
+        showMessage(error?.message || "No se ha podido iniciar el pago.", "bad");
+      } finally {
+        buttons.forEach((btn) => btn.disabled = false);
+      }
     }
 
     async function addAccount() {
@@ -512,6 +625,7 @@
       $("sessionPill").textContent = currentUser ? `Sesión: ${email}` : "Sin sesión";
 
       $("loginBox").classList.toggle("hidden", Boolean(currentUser));
+      $("purchaseBox").classList.add("hidden");
       $("notAdminBox").classList.add("hidden");
       $("adminBox").classList.add("hidden");
 
@@ -521,10 +635,13 @@
         return;
       }
 
+      $("purchaseBox").classList.remove("hidden");
+      $("creditsStatus").textContent = `Sesión iniciada: ${email}`;
+
       if (!isAdmin(currentUser)) {
         unsubscribeAccounts?.();
         unsubscribeAccounts = null;
-        $("notAdminText").textContent = `Has iniciado sesión como ${email}, pero solo ${ADMIN_EMAIL} puede autorizar cuentas.`;
+        $("notAdminText").textContent = `Has iniciado sesión como ${email}. Puedes comprar partidas, pero solo ${ADMIN_EMAIL} puede autorizar cuentas.`;
         $("notAdminBox").classList.remove("hidden");
         return;
       }
@@ -532,6 +649,19 @@
       $("adminStatus").textContent = `Sesión administradora correcta: ${email}`;
       $("adminBox").classList.remove("hidden");
       listenAccounts();
+    }
+
+
+
+    function showStripeReturnMessage() {
+      const params = new URLSearchParams(window.location.search);
+      const stripeStatus = params.get("stripe");
+
+      if (stripeStatus === "success") {
+        showMessage("Pago completado. En el siguiente paso activaremos la suma automática de partidas con el webhook.", "ok");
+      } else if (stripeStatus === "cancel") {
+        showMessage("Pago cancelado. No se ha cobrado nada.", "info");
+      }
     }
 
     function escapeHtml(text) {
@@ -559,6 +689,7 @@
     onAuthStateChanged(auth, (user) => {
       currentUser = user;
       updateUI();
+      showStripeReturnMessage();
     });
   </script>
 </body>
